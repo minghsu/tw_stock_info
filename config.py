@@ -11,14 +11,15 @@ USER_AGENT_LIST = [
 
 # Delay Timer for each request
 DELAY_TIMER = 15
+STOCK_LIST_DELAY_TIMER = 3
 
 # Download timeout
 DOWNLOAD_TIMOUT = 3
 
 # URL for Fetch Stock No
 STOCK_CODE_URL_LIST = [
-    "http://isin.twse.com.tw/isin/C_public.jsp?strMode=2",
-    "http://isin.twse.com.tw/isin/C_public.jsp?strMode=4"
+    ["http://isin.twse.com.tw/isin/C_public.jsp?strMode=2","上市"],
+    ["http://isin.twse.com.tw/isin/C_public.jsp?strMode=4","上櫃"]
 ]
 
 # DB CONFIGURATION
