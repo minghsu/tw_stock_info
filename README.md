@@ -32,4 +32,6 @@ MariaDB/MySQL 資料庫設定
 若程式能正確連線至 MariaDB/MySQL, 會自動建立 tw_stock_db 的資料庫, 以及 tbl_stock_code 資料表
 ***
 上市、上櫃公司股價資料更新
-+ 待更新
++ python3 tw_stock_record.py 2412  (以中華電信為例)
+
+PS. 目前僅支援單一股票處理
