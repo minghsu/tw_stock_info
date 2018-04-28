@@ -47,7 +47,7 @@ db = tw_stock_db.tw_stock_db()
 codeIndex = db.existStockCode(sys.argv[1])
 if (codeIndex != -1):
     stockInfo = db.getStockInfo(codeIndex)
-    print (" [INFO] 代號: %s, 名稱: %s, 啟始日: %s" % (stockInfo[STOCK_INFO_CODE],stockInfo[STOCK_INFO_NAME], stockInfo[STOCK_INFO_DATE]))
+    print (" [INFO] 代號: %s, 名稱: %s, 上市日期: %s" % (stockInfo[STOCK_INFO_CODE],stockInfo[STOCK_INFO_NAME], stockInfo[STOCK_INFO_DATE]))
 
     chinese_start_date = None
     if (db.isExistStockRecordTable(stockInfo[STOCK_INFO_CODE]) == 0):
@@ -61,10 +61,16 @@ if (codeIndex != -1):
         start_date = datetime.datetime.strptime(stockInfo[STOCK_INFO_DATE], '%Y/%m/%d')
     else:
         start_date = ConverChineseToWestDate(chinese_start_date)
+        print (" [INFO] 最後更新日期 %s" % (start_date.strftime("%Y/%m/%d")))
+        start_date = start_date + datetime.timedelta(days=1)
+
 
     end_date = datetime.datetime.today()
-
     print (" [INFO] 預計截取 %s 收盤資料, 由 %s 至 %s" % (stockInfo[STOCK_INFO_CODE], start_date.strftime("%Y/%m/%d"), end_date.strftime("%Y/%m/%d")))
+
+    if (start_date.year < config.STOCK_RECORD_START_YEAR):
+        start_date = datetime.datetime.strptime("1993/1/1", '%Y/%m/%d')
+        print (" [INFO] 查詢日期小於81年1月4日, 自動調整啟始日期為 1993/01/01")
 
     curr_date = start_date
     while (end_date > curr_date):
@@ -76,26 +82,23 @@ if (codeIndex != -1):
                 'User-Agent': random.choice(config.USER_AGENT_LIST)
             } 
         ) 
-        print (" [DEBUG]", fetch_url)
-        print (" [DEBUG] 由 %s 至 %s" % (curr_date.strftime("%Y/%m/%d"), end_date.strftime("%Y/%m/%d")))
-
-        print(" [INFO] 載入 %s 年 %s 月收盤資料" % (curr_date.strftime("%Y"), curr_date.strftime("%m")) , end='\r', flush=True)
+        print(" [INFO] 載入 %s 年 %s 月收盤資料" % (curr_date.strftime("%Y"), curr_date.strftime("%m")), end='\r')
         try:
             json_contents = urllib.request.urlopen(fetchReq, timeout=config.DOWNLOAD_TIMOUT).read()
             contents = json.loads(json_contents)
 
+            print(" [INFO] 載入 %s 年 %s 月收盤資料, 共 %d 筆資料" % (curr_date.strftime("%Y"), curr_date.strftime("%m"), len(contents['data'])))
+
             for day_transaction in contents['data']:
-                """ Only insert un-record data """
+                # Only insert un-record data 
                 if (curr_date < ConverChineseToWestDate(day_transaction[0]) or chinese_start_date == None):
                     db.insertStockRecord(stockInfo[STOCK_INFO_CODE], day_transaction[0], day_transaction[1], day_transaction[2], day_transaction[3], day_transaction[4], day_transaction[5], day_transaction[6], day_transaction[7], day_transaction[8])
 
-            curr_date = CalcNextMonth1stDate(curr_date)
-            print (" [DEBUG 2] 由 %s 至 %s" % (curr_date.strftime("%Y/%m/%d"), end_date.strftime("%Y/%m/%d")))
-            
+            curr_date = CalcNextMonth1stDate(curr_date)            
             time.sleep(config.DELAY_TIMER)
             db.commit()
         except:
-            print (" [INFO] 載入錯誤!! 預計 30 秒後再次重新載入!")
+            print (" [INFO] %s 年 %s 月資料載入錯誤!! 預計 30 秒後再次重新載入!" % (curr_date.strftime("%Y"), curr_date.strftime("%m")))
             time.sleep(config.STOCK_RECORD_RETRY_TIMER)
 
 else:
@@ -103,6 +106,7 @@ else:
 
 db.commit()
 db.close()
+print (" [INFO] %s 股價收盤資料載入完成!!" % (stockInfo[STOCK_INFO_CODE]))
 
 def UpdateAllStockRecord():
 

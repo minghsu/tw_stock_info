@@ -9,9 +9,12 @@ USER_AGENT_LIST = [
     'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1',  
 ] 
 
+STOCK_RECORD_START_YEAR = 1993
+
 # Delay Timer for each request
 DELAY_TIMER = 15
 STOCK_LIST_DELAY_TIMER = 3
+STOCK_RECORD_RETRY_TIMER = 30
 
 # Download timeout
 DOWNLOAD_TIMOUT = 3
