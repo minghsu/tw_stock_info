@@ -85,6 +85,9 @@ class tw_stock_db:
             self.stock_code = StockCodeCursor.fetchall()
         else:
             self.stock_code = ()        
+    
+    def fetchAllStockCode(self):
+        return self.stock_code
 
     def getStockCodeCount(self):
         return len(self.stock_code)
