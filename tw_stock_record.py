@@ -7,8 +7,7 @@ import random
 import time
 import sys
 
-import tw_stock_db
-import config
+import tw_stock_db, tw_stock_log, config
 
 STOCK_INFO_CODE = 0
 STOCK_INFO_NAME = 1
@@ -46,39 +45,43 @@ def CalcNextMonth1stDate(srcDate):
 nWorkMode = STOCK_INFO_WORK_MODE_BY_ARGV
 nFetchCount = 0
 
+log = tw_stock_log.tw_stock_log()
+log.log (" [INFO] 模式: 股票收盤資料")
+
 db = tw_stock_db.tw_stock_db()
 
 if (len(sys.argv) < 2):
-    print (" [INFO] 無效參數!! 請輸入股票代號!")
+    log.log (" [INFO] 無效參數!! 請輸入股票代號!")
     db.close()
+    log.close()
     sys.exit()
 elif (sys.argv[1].upper == "ALL"):
     nWorkMode = STOCK_INFO_WORK_MODE_BY_ALL
     nFetchCount = db.getStockCodeCount()
-    print(" [INFO] 預計載入共 %d 家資料" % (nFetchCount))
+    log.log(" [INFO] 預計載入共 %d 家資料" % (nFetchCount))
 else:
     code = sys.argv[1:]
     nFetchCount = len(code)
-    print(" [INFO] 預計載入 %s 共 %d 筆資料" % (" ".join(code), nFetchCount))
+    log.log(" [INFO] 預計載入 %s 共 %d 筆資料" % (" ".join(code), nFetchCount))
 
 for i in range (nFetchCount):
     if (nWorkMode == STOCK_INFO_WORK_MODE_BY_ARGV):
         codeIndex = db.existStockCode(code[i])
         if (codeIndex == -1):
-            print (" [INFO] 參數代號 %s 不存在, 忽略此筆要求!" % (code[i]))
+            log.log (" [INFO] 參數代號 %s 不存在, 忽略此筆要求!" % (code[i]))
             continue
         else:
             stockInfo = db.getStockInfo(codeIndex)
     else:
         stockInfo = db.getStockInfo(i)
         if ( stockInfo == None):
-            print (" [INFO] 資料庫索引號 %d 不存在, 忽略此筆要求!" % (i))
+            log.log (" [INFO] 資料庫索引號 %d 不存在, 忽略此筆要求!" % (i))
 
-    print (" [INFO] 代號: %s, 名稱: %s, 上市日期: %s" % (stockInfo[STOCK_INFO_CODE],stockInfo[STOCK_INFO_NAME], stockInfo[STOCK_INFO_DATE]))
+    log.log (" [INFO] 代號: %s, 名稱: %s, 上市日期: %s" % (stockInfo[STOCK_INFO_CODE],stockInfo[STOCK_INFO_NAME], stockInfo[STOCK_INFO_DATE]))
 
     chinese_start_date = None
     if (db.isExistStockRecordTable(stockInfo[STOCK_INFO_CODE]) == 0):
-        print (" [INFO] %s 資料表不存在, 自動建立" % (stockInfo[STOCK_INFO_CODE]))
+        log.log (" [INFO] %s 資料表不存在, 自動建立" % (stockInfo[STOCK_INFO_CODE]))
         db.createStockRecordTable(stockInfo[STOCK_INFO_CODE])
         start_date = datetime.datetime.strptime(stockInfo[STOCK_INFO_DATE], '%Y/%m/%d')
     else:
@@ -88,16 +91,16 @@ for i in range (nFetchCount):
         start_date = datetime.datetime.strptime(stockInfo[STOCK_INFO_DATE], '%Y/%m/%d')
     else:
         start_date = ConverChineseToWestDate(chinese_start_date)
-        print (" [INFO] 最後更新日期 %s" % (start_date.strftime("%Y/%m/%d")))
+        log.log (" [INFO] 最後更新日期 %s" % (start_date.strftime("%Y/%m/%d")))
         start_date = start_date + datetime.timedelta(days=1)
 
 
     end_date = datetime.datetime.today()
-    print (" [INFO] 預計截取 %s 收盤資料, 由 %s 至 %s" % (stockInfo[STOCK_INFO_CODE], start_date.strftime("%Y/%m/%d"), end_date.strftime("%Y/%m/%d")))
+    log.log (" [INFO] 預計截取 %s 收盤資料, 由 %s 至 %s" % (stockInfo[STOCK_INFO_CODE], start_date.strftime("%Y/%m/%d"), end_date.strftime("%Y/%m/%d")))
 
     if (start_date.year < config.STOCK_RECORD_START_YEAR):
         start_date = datetime.datetime.strptime("1993/1/1", '%Y/%m/%d')
-        print (" [INFO] 查詢日期小於81年1月4日, 自動調整啟始日期為 1993/01/01")
+        log.log (" [INFO] 查詢日期小於81年1月4日, 自動調整啟始日期為 1993/01/01")
 
     curr_date = start_date
     while (end_date > curr_date):
@@ -109,12 +112,12 @@ for i in range (nFetchCount):
                 'User-Agent': random.choice(config.USER_AGENT_LIST)
             } 
         ) 
-        print(" [INFO] 載入 %s %s 年 %s 月收盤資料" % (stockInfo[STOCK_INFO_NAME], curr_date.strftime("%Y"), curr_date.strftime("%m")), end='\r')
+        log.log(" [INFO] 載入 %s %s 年 %s 月收盤資料" % (stockInfo[STOCK_INFO_NAME], curr_date.strftime("%Y"), curr_date.strftime("%m")))
         try:
             json_contents = urllib.request.urlopen(fetchReq, timeout=config.DOWNLOAD_TIMOUT).read()
             contents = json.loads(json_contents)
 
-            print(" [INFO] 載入 %s %s 年 %s 月收盤資料, 共 %d 筆資料" % (stockInfo[STOCK_INFO_NAME], curr_date.strftime("%Y"), curr_date.strftime("%m"), len(contents['data'])))
+            log.log(" [INFO] 載入 %s %s 年 %s 月收盤資料完成, 共 %d 筆資料" % (stockInfo[STOCK_INFO_NAME], curr_date.strftime("%Y"), curr_date.strftime("%m"), len(contents['data'])))
 
             for day_transaction in contents['data']:
                 # Only insert un-record data 
@@ -125,12 +128,12 @@ for i in range (nFetchCount):
             time.sleep(config.DELAY_TIMER)
             db.commit()
         except:
-            print (" [INFO] %s 年 %s 月資料載入錯誤!! 預計 30 秒後再次重新載入!" % (curr_date.strftime("%Y"), curr_date.strftime("%m")))
+            log.log (" [INFO] %s 年 %s 月資料載入錯誤!! 預計 30 秒後再次重新載入!" % (curr_date.strftime("%Y"), curr_date.strftime("%m")))
             time.sleep(config.STOCK_RECORD_RETRY_TIMER)
 
     else:
-        print (" [INFO] 很抱歉! 查無股票代號 %s" % (code))
+        log.log (" [INFO] 很抱歉! 查無股票代號 %s" % (code))
 
 db.commit()
 db.close()
-print (" [INFO] %s 股價收盤資料載入完成!!" % (stockInfo[STOCK_INFO_CODE]))
+log.log (" [INFO] %s 股價收盤資料載入完成!!" % (stockInfo[STOCK_INFO_CODE]))

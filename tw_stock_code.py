@@ -11,14 +11,15 @@ import sys
 import html
 
 import config
-import tw_stock_db
+import tw_stock_db, tw_stock_log
 
 
-#def UpdateStockCode():
+log = tw_stock_log.tw_stock_log()
+log.log (" [INFO] 模式: 股票代號")
 
 db = tw_stock_db.tw_stock_db()
 
-print (" [INFO] 更新前上市櫃公司總數: %d 家 " % (db.getStockCodeCount()) )
+log.log(" [INFO] 更新前上市櫃公司總數: %d 家 " % (db.getStockCodeCount()) )
 
 for fetch_url in config.STOCK_CODE_URL_LIST:
     fetchReq = urllib.request.Request(
@@ -29,7 +30,7 @@ for fetch_url in config.STOCK_CODE_URL_LIST:
         }
     )        
 
-    print (" [INFO] " + fetch_url[1] + "資料載入中 ...")
+    log.log (" [INFO] " + fetch_url[1] + "資料載入中 ...")
     url_response = urllib.request.urlopen(fetchReq, timeout=config.DOWNLOAD_TIMOUT)
     url_content  = url_response.read()
 
@@ -41,16 +42,13 @@ for fetch_url in config.STOCK_CODE_URL_LIST:
     trs = Selector(text=tbls[0]).xpath('.//tr')
     trs_count = len(trs)
 
-    print (" [INFO] %s資料載入完成, 約 %d 筆資料" % (fetch_url[1], trs_count))
+    log.log (" [INFO] %s資料載入完成, 約 %d 筆資料" % (fetch_url[1], trs_count))
     
     current_count = 0
     for tr in trs:
         current_count = current_count + 1
 
-        if (current_count < trs_count):
-            print (" [INFO] %s資料處理中 %d/%d, %d%%" % (fetch_url[1], current_count, trs_count, (current_count/trs_count)*100), end='\r', flush=True)
-        else:
-            print (" [INFO] %s資料處理中 %d/%d, %d%%" % (fetch_url[1], current_count, trs_count, (current_count/trs_count)*100))
+        log.log (" [INFO] %s資料處理中 %d/%d, %d%%" % (fetch_url[1], current_count, trs_count, (current_count/trs_count)*100))
 
         tds = tr.xpath('.//td')
         if len(tds) == 7:
@@ -97,16 +95,18 @@ for fetch_url in config.STOCK_CODE_URL_LIST:
 
             if cfi != "CFICode":
                 if (db.existStockCode(stock_no) < 0):
-                    print (" [INFO] " + fetch_url[1] + "新增: " + stock_no + ", " + stock_name)
+                    log.log (" [INFO] " + fetch_url[1] + "新增: " + stock_no + ", " + stock_name)
                     db.insertStockCode(stock_no, stock_name, isin, create_date, market_type, industry_type, cfi, note)
 
     time.sleep(config.STOCK_LIST_DELAY_TIMER)
 
 db.fetchStockCode()
-print (" [INFO] 更新後上市櫃公司總數: %d 家 " % (db.getStockCodeCount()) )
+log.log (" [INFO] 更新後上市櫃公司總數: %d 家 " % (db.getStockCodeCount()) )
 
 # Commit the DB transaction
 db.commit()
 
 # Close DB Connection
 db.close()
+
+log.close()
