@@ -131,9 +131,6 @@ for i in range (nFetchCount):
             log.log (" [INFO] %s 年 %s 月資料載入錯誤!! 預計 30 秒後再次重新載入!" % (curr_date.strftime("%Y"), curr_date.strftime("%m")))
             time.sleep(config.STOCK_RECORD_RETRY_TIMER)
 
-    else:
-        log.log (" [INFO] 很抱歉! 查無股票代號 %s" % (code))
-
 db.commit()
 db.close()
 log.log (" [INFO] %s 股價收盤資料載入完成!!" % (stockInfo[STOCK_INFO_CODE]))
