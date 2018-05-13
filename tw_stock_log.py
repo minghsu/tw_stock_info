@@ -12,5 +12,9 @@ class tw_stock_log:
         print (fullmsg)
         self.file.write(fullmsg + "\n")
 
+    def log_without_datetime(self, msg):
+        print (msg)
+        self.file.write(msg + "\n")
+
     def close(self):
         self.file.close()

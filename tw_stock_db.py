@@ -2,10 +2,11 @@
 # -*- coding:utf-8 -*-
 
 import pymysql
-
 import config
 
 
+# Stock Record Field
+DICT_STOCK = { 'DATE': 'create_date', 'STOCK': 'transfer_stock', 'MONEY': 'transfer_money', 'OPEN': 'open_price', 'MAX': 'max_price', 'MIN': 'min_price', 'END': 'end_price', 'SPREAD': 'transfer_spread', 'COUNT': 'transfer_count'}
 
 # SQL CMD
 SQL_CMD_CREATE_DATABASE = ("CREATE DATABASE IF NOT EXISTS " 
@@ -61,6 +62,12 @@ SQL_CMD_STOCK_RECORD_TABLE_EXIST_CHECK = ("SELECT * FROM information_schema.tabl
 
 SQL_CMD_LAST_STOCK_RECORD_DATE = ("SELECT create_date from tbl_%s ORDER BY create_date DESC LIMIT 1")
 
+SQL_CMD_QUERY_STOCK_RECORD_COUNT = ("SELECT (count) from tbl_%s")
+
+SQL_CMD_QUERY_STOCK_RECORD = ("SELECT %s from tbl_%s ORDER BY id")
+
+SQL_CMD_EXIST_STOCK_RECORD_DATE = ("SELECT create_date from tbl_%s WHERE create_date = '%s'")
+
 class tw_stock_db:
     def __init__(self):
         self.connection =  pymysql.connect(user=config.DB_USER, passwd=config.DB_PWD, charset=config.DB_CHARSET)
@@ -96,6 +103,46 @@ class tw_stock_db:
         if (index < self.getStockCodeCount()):
             return self.stock_code[index]
         return None
+
+    def getStockRecordCount(self, code):
+        nRetCount = 0
+        if (self.isExistStockRecordTable(code) != 0):
+            StockRecordCursor = self.connection.cursor()
+            if (StockRecordCursor.execute(SQL_CMD_QUERY_STOCK_RECORD_COUNT % (code))!=0):
+                return StockRecordCursor.fetchone()[0]
+
+        return nRetCount
+
+#    code: 股票代號, 例如 2412
+#    fields: tpule 格式, 可參照 DICT_STOCK
+#    empty_count: 空欄位的數量
+#    範例: getstockRecord("2412", ('DATE', 'END'), 2), 除了傳回 '日期', '收盤價' 外, 還會多兩個空欄位
+#    結果: ('107/04/24', '111.00', '', ''), ('107/04/25', '110.50', 'N/A', 'N/A'))
+    def getStockRecord(self, code, fields, empty_count):
+        arrRet = ()
+        if (self.isExistStockRecordTable(code) != 0):
+            strFields = ""
+            for field in fields:
+                if (strFields == ""):
+                    strFields = strFields + DICT_STOCK[field]
+                else:
+                    strFields = strFields + ", " + DICT_STOCK[field]
+
+            for j in range(empty_count):
+                if (strFields == ""):
+                    strFields = strFields + ("'N/A' as empty%d" % (j))
+                else:
+                    strFields = strFields + (", 'N/A' as empty%d" % (j))
+            print ("DEBUG: " + SQL_CMD_QUERY_STOCK_RECORD % (strFields, code))
+
+            StockRecordCursor = self.connection.cursor()
+            if (StockRecordCursor.execute(SQL_CMD_QUERY_STOCK_RECORD % (strFields, code))!=0):
+                arrRet = StockRecordCursor.fetchall()
+
+        return arrRet
+
+    def isExistStockRecordDate(self, code, date):
+        return self.connection.cursor().execute(SQL_CMD_EXIST_STOCK_RECORD_DATE % (code, date))
 
     def isExistStockRecordTable(self, code):
         return self.connection.cursor().execute(SQL_CMD_STOCK_RECORD_TABLE_EXIST_CHECK % (code))

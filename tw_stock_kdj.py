@@ -31,15 +31,17 @@ for i in range (nFetchCount):
         continue
 
     stockInfo = db.getStockInfo(codeIndex)
-    stock_record = list(db.getStockRecord(code[i], ('DATE', 'END', 'MAX', 'MIN'), 2))
+    stock_record = list(db.getStockRecord(code[i], ('DATE', 'END', 'MAX', 'MIN'), 3))
 
     if (len(stock_record) < FAST_K_PERIOD):
         log.log (" [INFO] 股票代號 %s 歷史資料少於 %d 筆, 忽略此筆要求!" % (code[i], FAST_K_PERIOD))
 
-    # 初始化第一筆 K, D 值 (第 FAST_K_PERIOD - 1 筆收盤資料)
+    # 初始化第一筆 K, D , J 值 (第 FAST_K_PERIOD - 1 筆收盤資料)
     initial_kd = list (stock_record[FAST_K_PERIOD - 1 - 1])
     initial_kd[4] = 50
     initial_kd[5] = 50
+    initial_kd[6] = 50
+
     stock_record[FAST_K_PERIOD - 1 - 1] = tuple(initial_kd)
 
     for j in range (FAST_K_PERIOD, len(stock_record)+1):
@@ -63,12 +65,14 @@ for i in range (nFetchCount):
 
         #log.log ("[DEBUG] last end %.2f, last k %.2f, last d %.2f, rsv %.2f" % (last_end, last_k, last_d, rsv))
 
-        curr_K=float('%.2f'% ((1/SLOW_K_PERIOD) * rsv + (2/SLOW_D_PERIOD) * last_k))
-        curr_D=float('%.2f'% ((1/SLOW_D_PERIOD) * curr_K  + (2/SLOW_D_PERIOD) * last_d))
+        curr_K=float('%.2f' % ((1/SLOW_K_PERIOD) * rsv + (2/SLOW_D_PERIOD) * last_k))
+        curr_D=float('%.2f' % ((1/SLOW_D_PERIOD) * curr_K  + (2/SLOW_D_PERIOD) * last_d))
+        curr_J=float('%.2f' % ((curr_D*3) - (curr_K*2)))
 
         calc_kd = list (stock_record[j-1])
         calc_kd[4] = curr_K
         calc_kd[5] = curr_D
+        calc_kd[6] = curr_J
         stock_record[j-1] = tuple(calc_kd)
 
         #log.log ("[DEBUG]  curr k %.2f, curr d %.2f" % (curr_K, curr_D))
@@ -77,7 +81,7 @@ for i in range (nFetchCount):
 
     # 結果輸出
     for kd_record in stock_record:
-        log.log_without_datetime ("%s, %s, %s, %s, %s, %s" % (kd_record[0], kd_record[1], kd_record[2], kd_record[3], str(kd_record[4]), str(kd_record[5])))
+        log.log_without_datetime ("%s, %s, %s, %s, %s, %s, %s" % (kd_record[0], kd_record[1], kd_record[2], kd_record[3], str(kd_record[4]), str(kd_record[5]), str(kd_record[6])))
 
 db.commit()
 db.close()

@@ -94,7 +94,6 @@ for i in range (nFetchCount):
         log.log (" [INFO] 最後更新日期 %s" % (start_date.strftime("%Y/%m/%d")))
         start_date = start_date + datetime.timedelta(days=1)
 
-
     end_date = datetime.datetime.today()
     log.log (" [INFO] 預計截取 %s 收盤資料, 由 %s 至 %s" % (stockInfo[STOCK_INFO_CODE], start_date.strftime("%Y/%m/%d"), end_date.strftime("%Y/%m/%d")))
 
@@ -121,16 +120,17 @@ for i in range (nFetchCount):
 
             for day_transaction in contents['data']:
                 # Only insert un-record data 
-                if (curr_date < ConverChineseToWestDate(day_transaction[0]) or chinese_start_date == None):
+                if (db.isExistStockRecordDate(stockInfo[STOCK_INFO_CODE], day_transaction[0]) == 0):
                     db.insertStockRecord(stockInfo[STOCK_INFO_CODE], day_transaction[0], day_transaction[1], day_transaction[2], day_transaction[3], day_transaction[4], day_transaction[5], day_transaction[6], day_transaction[7], day_transaction[8])
+                    db.commit()
+                    log.log (" [INFO] 寫入 %s 收盤資料!!" % (day_transaction[0]))
 
             curr_date = CalcNextMonth1stDate(curr_date)            
             time.sleep(config.DELAY_TIMER)
-            db.commit()
         except:
             log.log (" [INFO] %s 年 %s 月資料載入錯誤!! 預計 30 秒後再次重新載入!" % (curr_date.strftime("%Y"), curr_date.strftime("%m")))
             time.sleep(config.STOCK_RECORD_RETRY_TIMER)
 
 db.commit()
 db.close()
-log.log (" [INFO] %s 股價收盤資料載入完成!!" % (stockInfo[STOCK_INFO_CODE]))
+log.log (" [INFO] 股價收盤資料載入完成!!")
