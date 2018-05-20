@@ -1,5 +1,8 @@
 # 台灣股市資訊收集
 Python 初學者的練習專案, 所以很多部份都只是 "能動" 的狀態, 很多細節都沒有處理好 (像是ERROR HANDLING), 畢竟初學者本人主要著重在驗證 "可行性"
+
+此版本已不再更新, 目前可行性已驗證可行, 作者將重新思考新新的架構, 再推出新的 V2.0.
+
 ***
 # 用途
 + 支援 MariaDB/MySQL 資料庫
@@ -31,7 +34,7 @@ Python 初學者的練習專案, 所以很多部份都只是 "能動" 的狀態,
 # 套件須求
 + Python3
 + Scrapy
-+ PyMySql
++ mysqlclient (若無法安裝, 可用 PyMySql 取代, 只須將 pymysql 改成 MySQLdb)
 ***
 # 使用方式
 MariaDB/MySQL 資料庫設定
@@ -47,5 +50,11 @@ MariaDB/MySQL 資料庫設定
 + python3 tw_stock_record.py 2412 1722 (依序處理 中華電 台肥 歷史股票收盤資料)
 + python3 tw_stock_record.py all (處理有有的股票代號)
 ***
-# 預計增加功能
-+ 股票資料計算 (Ex: KD, 乖離率, 技術分析等)
+上市、上櫃公司股價資料修復 (有發生遺落少部份日期資料, 可用此方式修正)
++ python3 tw_stock_record_recovery.py 2412 1722 (依序處理 中華電 台肥 歷史股票收盤資料)
++ python3 tw_stock_record_recovery.py all (處理有有的股票代號)
+
+PS. 此方式是取消最後儲存日期的檢查, 讓系統重新爬回所有的交易日資料
+***
+KDJ 值
++ python3 tw_stock_kdj.py 2412 (計算出該股市目前所有收盤資料的 KDJ 值, 採用 9, 3, 3 的方式計算)

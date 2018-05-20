@@ -28,7 +28,7 @@ def CalcNextMonth1stDate(srcDate):
     MONTH_31 = [1, 3, 5, 7, 8, 10, 12]
     MONTH_30 = [4, 6, 9, 11]
 
-    # set to 1st day of month
+    # set to 1st day
     desDate = srcDate + datetime.timedelta(days=(1-srcDate.day))
 
     if srcDate.month in MONTH_31:
@@ -49,7 +49,7 @@ nWorkMode = STOCK_INFO_WORK_MODE_BY_ARGV
 nFetchCount = 0
 
 log = tw_stock_log.tw_stock_log()
-log.log (" [INFO] 模式: 股票收盤資料")
+log.log (" [INFO] 模式: 股票收盤資料修復作業")
 
 db = tw_stock_db.tw_stock_db()
 
@@ -82,21 +82,11 @@ for i in range (nFetchCount):
 
     log.log (" [INFO] 代號: %s, 名稱: %s, 上市日期: %s" % (stockInfo[STOCK_INFO_CODE],stockInfo[STOCK_INFO_NAME], stockInfo[STOCK_INFO_DATE]))
 
-    chinese_start_date = None
     if (db.isExistStockRecordTable(stockInfo[STOCK_INFO_CODE]) == 0):
         log.log (" [INFO] %s 資料表不存在, 自動建立" % (stockInfo[STOCK_INFO_CODE]))
         db.createStockRecordTable(stockInfo[STOCK_INFO_CODE])
-        start_date = datetime.datetime.strptime(stockInfo[STOCK_INFO_DATE], '%Y/%m/%d')
-    else:
-        chinese_start_date = db.getLastInfoDate(stockInfo[STOCK_INFO_CODE])
 
-    if (chinese_start_date == None):
-        start_date = datetime.datetime.strptime(stockInfo[STOCK_INFO_DATE], '%Y/%m/%d')
-    else:
-        start_date = ConverChineseToWestDate(chinese_start_date)
-        log.log (" [INFO] 最後更新日期 %s" % (start_date.strftime("%Y/%m/%d")))
-        start_date = start_date + datetime.timedelta(days=1)
-
+    start_date = datetime.datetime.strptime(stockInfo[STOCK_INFO_DATE], '%Y/%m/%d')
     end_date = datetime.datetime.today()
     log.log (" [INFO] 預計截取 %s 收盤資料, 由 %s 至 %s" % (stockInfo[STOCK_INFO_CODE], start_date.strftime("%Y/%m/%d"), end_date.strftime("%Y/%m/%d")))
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-import pymysql
 import config
+import MySQLdb
 
 
 # Stock Record Field
@@ -64,13 +64,13 @@ SQL_CMD_LAST_STOCK_RECORD_DATE = ("SELECT create_date from tbl_%s ORDER BY creat
 
 SQL_CMD_QUERY_STOCK_RECORD_COUNT = ("SELECT (count) from tbl_%s")
 
-SQL_CMD_QUERY_STOCK_RECORD = ("SELECT %s from tbl_%s ORDER BY id")
+SQL_CMD_QUERY_STOCK_RECORD = ("SELECT %s from tbl_%s ORDER BY create_date")
 
 SQL_CMD_EXIST_STOCK_RECORD_DATE = ("SELECT create_date from tbl_%s WHERE create_date = '%s'")
 
 class tw_stock_db:
     def __init__(self):
-        self.connection =  pymysql.connect(user=config.DB_USER, passwd=config.DB_PWD, charset=config.DB_CHARSET)
+        self.connection =  MySQLdb.connect(user=config.DB_USER, passwd=config.DB_PWD, charset=config.DB_CHARSET)
 
         """ check database exist or not """
         if (self.connection.cursor().execute(SQL_CMD_DATABASE_EXIST_CHECK) == 0):
